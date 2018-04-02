@@ -1,0 +1,19 @@
+web:
+  build: golangserver
+  container_name: golangserver
+  volumes:
+    - ./golangserver/app:/go/src/github.com/user/myProject/app
+  environment:
+    - APP_ENV:test
+  ports:
+    - 8080:8080
+
+aerospike:
+  image: aerospike/aerospike-server
+  container_name: aerospike
+  environment:
+    - NAMESPACE=cibucks
+    - REPL_FACTOR=2
+    - MEM_GB=1
+    - DEFAULT_TTL=0d
+    - STORAGE_GB=1
