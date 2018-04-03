@@ -1,3 +1,5 @@
 tmp/
+golangserver/app/tmp
 cibucks_data/
-
+.aql_history
+.vscode
