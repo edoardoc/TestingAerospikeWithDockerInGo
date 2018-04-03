@@ -7,10 +7,14 @@ web:
     - APP_ENV:test
   ports:
     - 8080:8080
+  links:
+    - aerospike
 
 aerospike:
   image: aerospike/aerospike-server
   container_name: aerospike
+  volumes:
+    - ./cibucks_data:/opt/aerospike/data
   environment:
     - NAMESPACE=cibucks
     - REPL_FACTOR=2

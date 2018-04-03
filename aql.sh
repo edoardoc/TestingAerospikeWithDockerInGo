@@ -1,0 +1,1 @@
+docker run -ti --link aerospike:aerospike aerospike/aerospike-tools aql -h aerospike --no-config-file
