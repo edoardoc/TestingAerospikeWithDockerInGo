@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	as "github.com/aerospike/aerospike-client-go"
 )
@@ -16,32 +17,30 @@ func main() {
 		fmt.Println("error connecting to as!")
 		return
 	}
+	fmt.Println("listening...")
 	http.HandleFunc("/", serverHandler(client))
 	http.ListenAndServe(":8080", nil)
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in profile", r)
-		}
-		client.Close()
-	}()
 }
 
 func serverHandler(client *as.Client) func(http.ResponseWriter, *http.Request) {
 	return func(response http.ResponseWriter, request *http.Request) {
+		defer func() {
+			if r := recover(); r != nil {
+				http.Error(response, "userID not found or else", http.StatusBadRequest)
+			}
+		}()
+
+		fmt.Println("serving: ")
 		query := request.URL.Query()
-		userID := query.Get("userID")
+		userID, _ := strconv.Atoi(query.Get("userID"))
 		log.Println("userID: ", userID)
 
-		if userID == "" {
+		if userID == 0 {
 			http.Error(response, "userID is required parameter", http.StatusBadRequest)
 			return
 		}
-		risultato, err := profile(client, 10)
-		if err != nil {
-			panicOnError(err)
-		}
-		// ridondanti?
+		risultato, _ := profile(client, userID)
 		response.Header().Set("Content-Type", "application/json")
 		response.WriteHeader(http.StatusOK)
 		out, _ := json.MarshalIndent(risultato, "", "  ")
@@ -54,19 +53,10 @@ func profile(client *as.Client, userID int) (string, error) {
 	namespace := "cibucks"
 	setName := "userProfiles"
 	key, _ := as.NewKey(namespace, setName, as.IntegerValue(userID))
-	fmt.Println("... accessing key " + key.String())
 	rec, err := client.Get(readPolicy, key)
-	panicOnError(err)
 
 	if err != nil {
-		fmt.Println(err)
 		return "", err
 	}
-	return fmt.Sprintf(" %v", rec.Bins), err
-}
-
-func panicOnError(err error) {
-	if err != nil {
-		panic(err)
-	}
+	return fmt.Sprintf("%v", rec.Bins), err
 }
