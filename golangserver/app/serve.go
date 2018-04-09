@@ -17,6 +17,8 @@ func main() {
 		fmt.Println("error connecting to as!")
 		return
 	}
+
+	testQuery(client)
 	fmt.Println("listening...")
 	http.HandleFunc("/", serverHandler(client))
 	http.ListenAndServe(":8080", nil)
@@ -59,4 +61,29 @@ func profile(client *as.Client, userID int) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%v", rec.Bins), err
+}
+
+func testQuery(client *as.Client) error {
+	stmt := as.NewStatement("cibucks", "campaigns", "profile")
+
+	rs, err := client.Query(nil, stmt)
+	for rec := range rs.Results() {
+		if rec.Err != nil {
+			log.Println("***** ERROR *****: ", rec.Err)
+			// handle error here
+			// if you want to exit, cancel the recordset to release the resources
+		} else {
+			profile := rec.Record.Bins["profile"]
+			log.Printf("profile: %v", profile)
+
+			receivedMap := profile.([]interface{})
+			for item := range receivedMap {
+				log.Printf("item: %v", receivedMap[item])
+				internalMap := receivedMap[item].(map[interface{}]interface{})
+				log.Printf("interestIds: %v", internalMap["interestIds"])
+				log.Printf("groupId: %v", internalMap["groupId"])
+			}
+		}
+	}
+	return err
 }
