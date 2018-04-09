@@ -17,12 +17,10 @@ func main() {
 		fmt.Println("error connecting to as!")
 		return
 	}
-
 	testQuery(client)
-	fmt.Println("listening...")
 	http.HandleFunc("/", serverHandler(client))
+	http.HandleFunc("/validCampaigns", validCampaigns(client))
 	http.ListenAndServe(":8080", nil)
-
 }
 
 func serverHandler(client *as.Client) func(http.ResponseWriter, *http.Request) {
@@ -39,18 +37,16 @@ func serverHandler(client *as.Client) func(http.ResponseWriter, *http.Request) {
 		log.Println("userID: ", userID)
 
 		if userID == 0 {
-			http.Error(response, "userID is required parameter", http.StatusBadRequest)
+			http.Error(response, "userID is a required parameter", http.StatusBadRequest)
 			return
 		}
-		risultato, _ := profile(client, userID)
-		response.Header().Set("Content-Type", "application/json")
+		result, _ := userProfiles(client, userID)
 		response.WriteHeader(http.StatusOK)
-		out, _ := json.MarshalIndent(risultato, "", "  ")
-		fmt.Fprintln(response, string(out))
+		fmt.Fprintln(response, string(fmt.Sprintf("%v", result["profile"])))
 	}
 }
 
-func profile(client *as.Client, userID int) (string, error) {
+func userProfiles(client *as.Client, userID int) (as.BinMap, error) {
 	readPolicy := as.NewPolicy()
 	namespace := "cibucks"
 	setName := "userProfiles"
@@ -58,20 +54,67 @@ func profile(client *as.Client, userID int) (string, error) {
 	rec, err := client.Get(readPolicy, key)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return fmt.Sprintf("%v", rec.Bins), err
+	return rec.Bins, err
 }
 
-func testQuery(client *as.Client) error {
+func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) {
+	return func(response http.ResponseWriter, request *http.Request) {
+		defer func() {
+			if r := recover(); r != nil {
+				http.Error(response, "userID not found or else", http.StatusBadRequest)
+			}
+		}()
+
+		fmt.Println("serving validCampaigns: ")
+		query := request.URL.Query()
+		userID, _ := strconv.Atoi(query.Get("userID"))
+		log.Println("userID: ", userID)
+
+		if userID == 0 {
+			http.Error(response, "userID is a required parameter", http.StatusBadRequest)
+			return
+		}
+		result, _ := userProfiles(client, userID)
+
+		stmt := as.NewStatement("cibucks", "campaigns", "profile")
+		rs, _ := client.Query(nil, stmt)
+		for rec := range rs.Results() {
+			if rec.Err != nil {
+				log.Println("***** ERROR *****: ", rec.Err)
+			} else {
+				// User should have all the groupIds that the campaign targets
+				// User should have at least one same interestId per groupId
+				campaigns := rec.Record.Bins["profile"].([]interface{})
+				for n := range campaigns {
+					campaign := campaigns[n].(map[interface{}]interface{})
+					log.Printf("interestIds: %v", campaign["interestIds"])
+					log.Printf("groupId: %v", campaign["groupId"])
+					for k := range result["profile"].([]interface{}) {
+						userProfile := result["profile"].([]interface{})[k].(map[interface{}]interface{})
+						log.Printf("userProfile interestIds: %v", userProfile["interestIds"])
+						log.Printf("userProfile groupId: %v", userProfile["groupId"])
+					}
+				}
+
+			}
+		}
+
+		response.Header().Set("Content-Type", "application/json")
+		response.WriteHeader(http.StatusOK)
+		out, _ := json.MarshalIndent(result, "", "  ")
+		fmt.Fprintln(response, string(out))
+	}
+}
+
+func testQuery(client *as.Client) (string, error) {
 	stmt := as.NewStatement("cibucks", "campaigns", "profile")
 
 	rs, err := client.Query(nil, stmt)
 	for rec := range rs.Results() {
 		if rec.Err != nil {
 			log.Println("***** ERROR *****: ", rec.Err)
-			// handle error here
-			// if you want to exit, cancel the recordset to release the resources
 		} else {
 			profile := rec.Record.Bins["profile"]
 			log.Printf("profile: %v", profile)
@@ -85,5 +128,5 @@ func testQuery(client *as.Client) error {
 			}
 		}
 	}
-	return err
+	return "", err
 }
