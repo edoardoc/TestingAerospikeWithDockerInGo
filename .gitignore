@@ -1,5 +1,4 @@
 tmp/
 golangserver/app/tmp/runner-build
-cibucks_data/
 .aql_history
 .vscode
