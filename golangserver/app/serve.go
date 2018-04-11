@@ -17,7 +17,6 @@ func main() {
 		fmt.Println("error connecting to as!")
 		return
 	}
-	testQuery(client)
 	http.HandleFunc("/", serverHandler(client))
 	http.HandleFunc("/validCampaigns", validCampaigns(client))
 	http.ListenAndServe(":8080", nil)
@@ -77,27 +76,45 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 			return
 		}
 		result, _ := userProfiles(client, userID)
+		binsThisUser := result["profile"].([]interface{})
 
 		stmt := as.NewStatement("cibucks", "campaigns", "profile")
-		rs, _ := client.Query(nil, stmt)
-		for rec := range rs.Results() {
-			if rec.Err != nil {
-				log.Println("***** ERROR *****: ", rec.Err)
+		rsCampaigns, _ := client.Query(nil, stmt)
+		for recCampaign := range rsCampaigns.Results() {
+			if recCampaign.Err != nil {
+				log.Println("***** ERROR *****: ", recCampaign.Err)
 			} else {
+				binsCampaigns := recCampaign.Record.Bins["profile"].([]interface{})
+				log.Printf("%v", binsCampaigns)
 				// User should have all the groupIds that the campaign targets
-				// User should have at least one same interestId per groupId
-				campaigns := rec.Record.Bins["profile"].([]interface{})
-				for n := range campaigns {
-					campaign := campaigns[n].(map[interface{}]interface{})
-					log.Printf("interestIds: %v", campaign["interestIds"])
-					log.Printf("groupId: %v", campaign["groupId"])
-					for k := range result["profile"].([]interface{}) {
-						userProfile := result["profile"].([]interface{})[k].(map[interface{}]interface{})
-						log.Printf("userProfile interestIds: %v", userProfile["interestIds"])
-						log.Printf("userProfile groupId: %v", userProfile["groupId"])
+				numMatch := 0
+				for n := range binsCampaigns {
+					binCampaign := binsCampaigns[n].(map[interface{}]interface{})
+					for k := range binsThisUser {
+						userProfile := binsThisUser[k].(map[interface{}]interface{})
+						if binCampaign["groupId"] == userProfile["groupId"] {
+							numMatch++
+						}
 					}
 				}
+				if numMatch == len(binsCampaigns) {
+					// User should have at least one same interestId per groupId
+					// log.Printf("OK %d %d", numMatch, len(binsCampaigns))
+					numMatch = 0
+					for n := range binsCampaigns {
+						binCampaign := binsCampaigns[n].(map[interface{}]interface{})
+						for k := range binsThisUser {
+							userProfile := binsThisUser[k].(map[interface{}]interface{})
+							if checkInterest(userProfile["interestIds"].([]interface{}), binCampaign["interestIds"].([]interface{})) {
+								numMatch++
+							}
+						}
+					}
+					if numMatch == len(binsCampaigns) {
+						log.Println("MATCH!!!!!!!!")
+					}
 
+				}
 			}
 		}
 
@@ -108,25 +125,15 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 	}
 }
 
-func testQuery(client *as.Client) (string, error) {
-	stmt := as.NewStatement("cibucks", "campaigns", "profile")
-
-	rs, err := client.Query(nil, stmt)
-	for rec := range rs.Results() {
-		if rec.Err != nil {
-			log.Println("***** ERROR *****: ", rec.Err)
-		} else {
-			profile := rec.Record.Bins["profile"]
-			log.Printf("profile: %v", profile)
-
-			receivedMap := profile.([]interface{})
-			for item := range receivedMap {
-				log.Printf("item: %v", receivedMap[item])
-				internalMap := receivedMap[item].(map[interface{}]interface{})
-				log.Printf("interestIds: %v", internalMap["interestIds"])
-				log.Printf("groupId: %v", internalMap["groupId"])
+// campaign[] of interestId contains at least one item of user[]?
+func checkInterest(user, campaign []interface{}) bool {
+	//set := make(map[int]int)
+	for _, valueCampaign := range campaign {
+		for _, valueUser := range user {
+			if valueCampaign == valueUser {
+				return true
 			}
 		}
 	}
-	return "", err
+	return false
 }
