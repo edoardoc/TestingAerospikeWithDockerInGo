@@ -75,10 +75,11 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 			http.Error(response, "userID is a required parameter", http.StatusBadRequest)
 			return
 		}
-		result, _ := userProfiles(client, userID)
-		binsThisUser := result["profile"].([]interface{})
+		record, _ := userProfiles(client, userID)
+		binsThisUser := record["profile"].([]interface{})
 
-		stmt := as.NewStatement("cibucks", "campaigns", "profile")
+		output := []int{}
+		stmt := as.NewStatement("cibucks", "campaigns", "key", "profile")
 		rsCampaigns, _ := client.Query(nil, stmt)
 		for recCampaign := range rsCampaigns.Results() {
 			if recCampaign.Err != nil {
@@ -111,16 +112,17 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 						}
 					}
 					if numMatch == len(binsCampaigns) {
-						log.Println("MATCH!!!!!!!!")
+						foundOne := recCampaign.Record.Bins["key"].(int)
+						log.Printf("MATCH!!! %v", foundOne)
+						output = append(output, foundOne)
 					}
-
 				}
 			}
 		}
 
 		response.Header().Set("Content-Type", "application/json")
 		response.WriteHeader(http.StatusOK)
-		out, _ := json.MarshalIndent(result, "", "  ")
+		out, _ := json.MarshalIndent(output, "", "  ")
 		fmt.Fprintln(response, string(out))
 	}
 }
