@@ -100,7 +100,6 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 				}
 				if numMatch == len(binsCampaigns) {
 					// User should have at least one same interestId per groupId
-					// log.Printf("OK %d %d", numMatch, len(binsCampaigns))
 					numMatch = 0
 					for n := range binsCampaigns {
 						binCampaign := binsCampaigns[n].(map[interface{}]interface{})
@@ -120,7 +119,6 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 			}
 		}
 
-		response.Header().Set("Content-Type", "application/json")
 		response.WriteHeader(http.StatusOK)
 		out, _ := json.MarshalIndent(output, "", "  ")
 		fmt.Fprintln(response, string(out))
@@ -129,7 +127,6 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 
 // campaign[] of interestId contains at least one item of user[]?
 func checkInterest(user, campaign []interface{}) bool {
-	//set := make(map[int]int)
 	for _, valueCampaign := range campaign {
 		for _, valueUser := range user {
 			if valueCampaign == valueUser {
