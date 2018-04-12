@@ -1,4 +1,5 @@
 tmp/
-golangserver/app/tmp/runner-build
+golangserver/app/tmp/
+cibucks_data/
 .aql_history
 .vscode

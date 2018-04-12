@@ -25,6 +25,7 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
+// curl -L http://127.0.0.1:8080/validCampaigns?userID=1
 func serverHandler(client *as.Client) func(http.ResponseWriter, *http.Request) {
 	return func(response http.ResponseWriter, request *http.Request) {
 		defer func() {
