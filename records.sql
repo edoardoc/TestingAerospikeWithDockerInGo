@@ -7,5 +7,4 @@ insert into cibucks.campaigns (PK,key,profile) values(4,4,'JSON[{"interestIds":[
 -- drop index cibucks.interestIds id_groupId
 CREATE MAPKEYS INDEX mpk_id_groupId ON cibucks.campaigns (profile) string
 CREATE MAPVALUES INDEX mpv_id_groupId on cibucks.campaigns (profile) numeric
-
 CREATE LIST INDEX id_groupId on cibucks.campaigns (profile) numeric

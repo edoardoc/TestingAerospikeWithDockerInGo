@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
+	"runtime"
 	"strconv"
+	"time"
 
 	as "github.com/aerospike/aerospike-client-go"
 )
@@ -60,6 +63,7 @@ func userProfiles(client *as.Client, userID int) (as.BinMap, error) {
 
 func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) {
 	return func(response http.ResponseWriter, request *http.Request) {
+		defer timeTrack(time.Now())
 		defer func() {
 			if r := recover(); r != nil {
 				http.Error(response, "userID not found or else", http.StatusBadRequest)
@@ -135,4 +139,20 @@ func checkInterest(user, campaign []interface{}) bool {
 		}
 	}
 	return false
+}
+
+func timeTrack(start time.Time) {
+	elapsed := time.Since(start)
+
+	// Skip this function, and fetch the PC and file for its parent.
+	pc, _, _, _ := runtime.Caller(1)
+
+	// Retrieve a function object this functions parent.
+	funcObj := runtime.FuncForPC(pc)
+
+	// Regex to extract just the function name (and not the module path).
+	runtimeFunc := regexp.MustCompile(`^.*\.(.*)$`)
+	name := runtimeFunc.ReplaceAllString(funcObj.Name(), "$1")
+
+	log.Println(fmt.Sprintf("%s took %s", name, elapsed))
 }
