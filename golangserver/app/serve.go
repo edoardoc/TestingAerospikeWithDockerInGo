@@ -90,16 +90,11 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 			if recCampaign.Err != nil {
 				log.Println("***** ERROR *****: ", recCampaign.Err)
 			} else {
-				/*
-					if allGroupIDs(recCampaign.Record.Bins["profile"].([]interface{}), binsThisUser) {
-						if oneInterestPerGroupID(recCampaign.Record.Bins["profile"].([]interface{}), binsThisUser) {
-				*/
 				if match(recCampaign.Record.Bins["profile"].([]interface{}), binsThisUser) {
 					foundOne := recCampaign.Record.Bins["key"].(int)
 					log.Printf("MATCH!!! %v", foundOne)
 					output = append(output, foundOne)
 				}
-
 			}
 		}
 
