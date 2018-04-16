@@ -86,15 +86,22 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 		output := []int{}
 		stmt := as.NewStatement("cibucks", "campaigns", "key", "profile")
 		rsCampaigns, _ := client.Query(nil, stmt)
+
 		for recCampaign := range rsCampaigns.Results() {
 			if recCampaign.Err != nil {
 				log.Println("***** ERROR *****: ", recCampaign.Err)
 			} else {
-				if match(recCampaign.Record.Bins["profile"].([]interface{}), binsThisUser) {
-					foundOne := recCampaign.Record.Bins["key"].(int)
-					log.Printf("MATCH!!! %v", foundOne)
-					output = append(output, foundOne)
-				}
+
+				// parallelising problem!!!
+				// probably output is accessed sequentially or else
+				go func(recCampaign *as.Result, binsThisUser []interface{}) {
+					if match(recCampaign.Record.Bins["profile"].([]interface{}), binsThisUser) {
+						// foundOne := recCampaign.Record.Bins["key"].(int)
+						// log.Printf("MATCH!!! %v", foundOne)
+						output = append(output, recCampaign.Record.Bins["key"].(int))
+					}
+				}(recCampaign, binsThisUser)
+
 			}
 		}
 
