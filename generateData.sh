@@ -1,5 +1,5 @@
 #!/bin/bash
-echo insert into cibucks.userProfiles (PK,key,profile) values(1,1,'JSON[{"interestIds":[1, 2], "groupId":1}, {"interestIds":[3], "groupId":2}]')
+echo "insert into cibucks.userProfiles (PK,key,profile) values(1,1,'JSON[{\"interestIds\":[1, 2], \"groupId\":1}, {\"interestIds\":[3], \"groupId\":2}]')"
 # -- drop index cibucks.interestIds id_groupId
 # CREATE MAPKEYS INDEX mpk_id_groupId ON cibucks.campaigns (profile) string
 # CREATE MAPVALUES INDEX mpv_id_groupId on cibucks.campaigns (profile) numeric

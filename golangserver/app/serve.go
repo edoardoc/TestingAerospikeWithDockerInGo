@@ -92,8 +92,8 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 				log.Println("***** ERROR *****: ", recCampaign.Err)
 			} else {
 
-				// parallelising problem!!!
-				// probably output is accessed sequentially or else
+				// no improvement with multi threading
+				// probably records are accessed sequentially or else
 				go func(recCampaign *as.Result, binsThisUser []interface{}) {
 					if match(recCampaign.Record.Bins["profile"].([]interface{}), binsThisUser) {
 						// foundOne := recCampaign.Record.Bins["key"].(int)
@@ -101,7 +101,6 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 						output = append(output, recCampaign.Record.Bins["key"].(int))
 					}
 				}(recCampaign, binsThisUser)
-
 			}
 		}
 
