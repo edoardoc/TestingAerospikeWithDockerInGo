@@ -92,8 +92,7 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 				log.Println("***** ERROR *****: ", recCampaign.Err)
 			} else {
 
-				// no improvement with multi threading
-				// probably records are accessed sequentially or else
+				// very small improvement with multi threading
 				go func(recCampaign *as.Result, binsThisUser []interface{}) {
 					if match(recCampaign.Record.Bins["profile"].([]interface{}), binsThisUser) {
 						// foundOne := recCampaign.Record.Bins["key"].(int)
