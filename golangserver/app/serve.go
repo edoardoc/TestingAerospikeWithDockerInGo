@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"regexp"
 	"runtime"
@@ -80,33 +81,30 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 			http.Error(response, "userID is a required parameter", http.StatusBadRequest)
 			return
 		}
-		record, _ := userProfiles(client, userID)
-		binsThisUser := record["profile"].([]interface{})
 
 		output := []int{}
-		stmt := as.NewStatement("cibucks", "campaigns", "key", "profile")
-		rsCampaigns, _ := client.Query(nil, stmt)
 
-		for recCampaign := range rsCampaigns.Results() {
-			if recCampaign.Err != nil {
-				log.Println("***** ERROR *****: ", recCampaign.Err)
-			} else {
-
-				// very small improvement with multi threading
-				go func(recCampaign *as.Result, binsThisUser []interface{}) {
-					if match(recCampaign.Record.Bins["profile"].([]interface{}), binsThisUser) {
-						// foundOne := recCampaign.Record.Bins["key"].(int)
-						// log.Printf("MATCH!!! %v", foundOne)
-						output = append(output, recCampaign.Record.Bins["key"].(int))
-					}
-				}(recCampaign, binsThisUser)
-			}
+		for k := 0; k <= 10; k++ {
+			go someBigRandomProcessing()
 		}
+		log.Printf("all completed...?")
 
 		response.WriteHeader(http.StatusOK)
 		out, _ := json.MarshalIndent(output, "", "  ")
 		fmt.Fprintln(response, string(out))
 	}
+}
+
+func someBigRandomProcessing() {
+	toWhere := rand.Intn(10000000000)
+	log.Printf("someBigRandomProcessing toWhere = %v", toWhere)
+
+	j := 200000000000
+	for k := 0; k <= toWhere; k++ {
+		j = j * j
+	}
+	log.Printf("someBigRandomProcessing completed")
+
 }
 
 // all user groupid in this campaign?
