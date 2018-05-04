@@ -92,7 +92,8 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 				log.Println("***** ERROR *****: ", recCampaign.Err)
 			} else {
 
-				// very small improvement with multi threading
+				// THERE IS NO IMPROVEMENT WITH MULTI THREADING,
+				// Results RECORDSET IS A CHANNEL -> IT FORCES A SYNCH BLOCK
 				go func(recCampaign *as.Result, binsThisUser []interface{}) {
 					if match(recCampaign.Record.Bins["profile"].([]interface{}), binsThisUser) {
 						// foundOne := recCampaign.Record.Bins["key"].(int)
