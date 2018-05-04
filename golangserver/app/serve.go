@@ -85,7 +85,9 @@ func validCampaigns(client *as.Client) func(http.ResponseWriter, *http.Request) 
 		output := []int{}
 
 		for k := 0; k <= 10; k++ {
-			go someBigRandomProcessing()
+			go func() {
+				someBigRandomProcessing()
+			}()
 		}
 		log.Printf("all completed...?")
 
